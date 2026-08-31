@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3855c8">
+  <title>Beranda</title>
+  <link rel="stylesheet" href="kelas.css">
+</head>
+<body data-page="home">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="kelas.html"><span class="brand-mark">K</span><span>PGSD HERO CLASS<small>Informasi, tugas, dan kelompok</small></span></a>
+      <nav class="main-nav" aria-label="Navigasi utama"><a href="kelas.html" data-nav="home">Beranda</a><a href="kelas-tugas.html" data-nav="tasks">Tugas</a><a href="kelas-grup.html" data-nav="group-links">Grup Matkul</a><a href="kelas-admin.html" data-nav="admin">Admin</a></nav>
+    </div>
+  </header>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">PORTAL KELAS</span>
+      <h1>Selamat Datang Di Website Kelas PGSD  H 2026</h1>
+      <p>Lihat deadline, serta tugas individu dan kelompok tanpa mencari chat lama.</p>
+      <div class="hero-actions"><a class="button button-primary" href="kelas-tugas.html">Buka halaman tugas →</a></div>
+    </section>
+    <section class="stats-grid" aria-label="Ringkasan kelas">
+      <article class="stat-card"><span>Mata kuliah aktif</span><strong data-stat="courses">0</strong></article>
+      <article class="stat-card"><span>Total tugas</span><strong data-stat="tasks">0</strong></article>
+      <article class="stat-card"><span>Tugas kelompok</span><strong data-stat="groups">0</strong></article>
+    </section>
+    <section class="content-grid">
+      <section class="panel"><div class="panel-heading"><div><h2>Mata kuliah</h2><p>Pilih mata kuliah untuk melihat tugasnya.</p></div></div><div id="courseList" class="course-list"></div></section>
+      <aside class="panel"><div class="panel-heading"><div><h2>Deadline terdekat</h2><p>Prioritas minggu ini.</p></div></div><ul id="deadlineList" class="deadline-list"></ul></aside>
+    </section>
+    <section class="panel schedule-panel">
+      <div class="panel-heading"><div><h2>Jadwal kuliah</h2><p id="semesterStartInfo">Jadwal perkuliahan semester ini.</p></div></div>
+      <div class="schedule-table-wrap"><table class="schedule-table"><thead><tr><th>Hari</th><th>Waktu</th><th>Mata kuliah</th><th>SKS</th><th>Ruangan</th></tr></thead><tbody id="classScheduleList"></tbody></table></div>
+    </section>
+  </main>
+  <footer class="site-footer">Portal Kelas · Ganti data contoh melalui <code>kelas-data.js</code></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="kelas-supabase.js"></script>
+  <script src="kelas-data.js"></script><script src="kelas-app.js"></script>
+</body>
+</html>

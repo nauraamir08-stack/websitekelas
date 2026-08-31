@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3855c8">
+  <title>Portal Kelas — Tugas</title>
+  <link rel="stylesheet" href="kelas.css">
+</head>
+<body data-page="tasks">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="kelas.html"><span class="brand-mark">K</span><span>Portal Kelas<small>Informasi, tugas, dan kelompok</small></span></a>
+      <nav class="main-nav" aria-label="Navigasi utama"><a href="kelas.html" data-nav="home">Beranda</a><a href="kelas-tugas.html" data-nav="tasks">Tugas</a><a href="kelas-grup.html" data-nav="group-links">Grup Matkul</a><a href="kelas-admin.html" data-nav="admin">Admin</a></nav>
+    </div>
+  </header>
+  <main class="page">
+    <section class="hero"><span class="eyebrow">PUSAT TUGAS</span><h1>Tugas per mata kuliah</h1><p>Pilih mata kuliah. Setiap tugas kelompok menampilkan satu kelompok yang sudah ditentukan admin.</p></section>
+    <section class="toolbar toolbar-single" aria-label="Pilihan tugas">
+      <label><span class="field-label">Mata kuliah</span><select id="courseSelect" class="select-field" aria-label="Pilih mata kuliah"></select></label>
+    </section>
+    <section class="course-summary"><div><h2 id="courseTitle"></h2><p id="courseInfo"></p></div></section>
+    <div class="task-filters" role="group" aria-label="Jenis tugas"><button class="filter-button active" type="button" data-filter="semua">Semua</button><button class="filter-button" type="button" data-filter="individu">👤 Individu</button><button class="filter-button" type="button" data-filter="kelompok">👥 Kelompok</button></div>
+    <section id="taskList" class="task-list" aria-live="polite"></section>
+    <p class="group-note">Pada tugas kelompok, buka kartu tugas untuk melihat nama kelompok, deadline, dan nama anggotanya.</p>
+  </main>
+  <dialog id="taskDialog"><div id="taskDialogContent" class="dialog-content"></div></dialog>
+  <footer class="site-footer">Portal Kelas · Ganti data contoh melalui <code>kelas-data.js</code></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="kelas-supabase.js"></script>
+  <script src="kelas-data.js"></script><script src="kelas-app.js"></script>
+</body>
+</html>
