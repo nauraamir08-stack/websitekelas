@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3855c8">
+  <title>Portal Kelas — Mahasiswa</title>
+  <link rel="stylesheet" href="kelas.css">
+</head>
+<body data-page="student">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="kelas.html"><span class="brand-mark">K</span><span>PGSD HERO CLASS<small>Informasi, tugas, dan kelompok</small></span></a>
+      <nav class="main-nav" aria-label="Navigasi utama"><a href="kelas.html" data-nav="home">Beranda</a><a href="kelas-tugas.html" data-nav="tasks">Tugas Saya</a><a href="kelas-grup.html" data-nav="group-links">Grup Matkul</a><a href="kelas-mahasiswa.html" data-nav="student">Mahasiswa</a><a href="kelas-admin.html" data-nav="admin">Admin</a></nav>
+    </div>
+  </header>
+  <main id="studentPage" class="page"></main>
+  <footer class="site-footer">Portal Kelas · Akses mahasiswa menggunakan NIM dan password.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="kelas-supabase.js"></script>
+  <script src="kelas-mahasiswa.js"></script>
+</body>
+</html>

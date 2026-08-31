@@ -134,6 +134,55 @@
     });
   }
 
+  function studentLoginHref(reason = '') {
+    const fileName = window.location.pathname.split('/').pop() || 'kelas-tugas.html';
+    const query = new URLSearchParams({ next: `${fileName}${window.location.search}` });
+    if (reason) query.set('reason', reason);
+    return `kelas-mahasiswa.html?${query.toString()}`;
+  }
+
+  async function updateStudentNavigation() {
+    const link = document.querySelector('.main-nav a[data-nav="student"]');
+    if (!link || !supabaseClient) return;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      link.textContent = 'Masuk';
+      link.href = 'kelas-mahasiswa.html';
+      return;
+    }
+    const { data: profile } = await supabaseClient
+      .from('student_profiles')
+      .select('nim')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (profile) {
+      link.textContent = 'Akun Saya';
+      link.href = 'kelas-mahasiswa.html';
+      return;
+    }
+    link.textContent = 'Masuk';
+    link.href = 'kelas-mahasiswa.html';
+  }
+
+  async function requireStudentSession() {
+    if (!supabaseClient) return false;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      window.location.replace(studentLoginHref('student-only'));
+      return false;
+    }
+    const { data: profile, error } = await supabaseClient
+      .from('student_profiles')
+      .select('nim')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (error || !profile) {
+      window.location.replace(studentLoginHref('student-only'));
+      return false;
+    }
+    return true;
+  }
+
   function renderHome() {
     const courseCount = courses.length;
     const allTasks = courses.flatMap(course => (course.tasks || []).map(task => ({ course, task })));
@@ -311,6 +360,8 @@
 
   async function start() {
     setupNavigation();
+    await updateStudentNavigation();
+    if ((page === 'tasks' || page === 'group') && !(await requireStudentSession())) return;
     if (page === 'home' || page === 'tasks' || page === 'group') await loadPortalData();
     if (page === 'home') renderHome();
     if (page === 'tasks') setupTasksPage();

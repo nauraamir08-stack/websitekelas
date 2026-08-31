@@ -20,6 +20,7 @@
 
   const client = api.createClient(config.url, config.publishableKey);
   let courses = portal.courses || [];
+  let studentProfiles = [];
   let pendingDeleteTasks = [];
   let pendingSaveForm = null;
 
@@ -82,6 +83,36 @@
       .in('course_id', courseIds)
       .order('due_at', { ascending: true });
     return { tasks: data || [], error };
+  }
+
+  function normalizePersonName(value) {
+    return String(value ?? '')
+      .toLocaleLowerCase('id-ID')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  function findStudentProfile(name) {
+    const needle = normalizePersonName(name);
+    if (!needle) return null;
+    const exact = studentProfiles.filter(profile => normalizePersonName(profile.full_name) === needle);
+    if (exact.length === 1) return exact[0];
+    const phraseMatches = studentProfiles.filter(profile => {
+      const fullName = normalizePersonName(profile.full_name);
+      return needle.length >= 4 && (fullName.includes(needle) || needle.includes(fullName));
+    });
+    return phraseMatches.length === 1 ? phraseMatches[0] : null;
+  }
+
+  function getMemberRows(memberNames) {
+    const unmatchedNames = [];
+    const memberRows = memberNames.map(name => {
+      const profile = findStudentProfile(name);
+      if (!profile) unmatchedNames.push(name);
+      return { name, student_id: profile?.user_id || null };
+    });
+    return { memberRows, unmatchedNames };
   }
 
   function formatAdminDate(value) {
@@ -201,11 +232,19 @@
       hasGroupTables(),
       getTasks(courses.map(course => course.id)),
     ]);
+    const { data: profiles, error: profilesError } = await client
+      .from('student_profiles')
+      .select('user_id, nim, full_name')
+      .order('full_name');
+    studentProfiles = profiles || [];
     const courseOptions = courses.map(course => `<option value="${escapeHTML(course.id)}">${escapeHTML(course.name)}</option>`).join('');
     const courseNameById = new Map(courses.map(course => [course.id, course.name]));
     const groupSetupMessage = groupTablesReady
       ? ''
       : '<p class="form-message form-message-error">Fitur kelompok belum disiapkan di database. Jalankan berkas <code>supabase-groups-setup.sql</code> di SQL Editor Supabase, lalu muat ulang halaman ini.</p>';
+    const studentSetupMessage = profilesError
+      ? '<p class="form-message form-message-error">Akses mahasiswa belum disiapkan. Jalankan <code>supabase-students-setup.sql</code> di SQL Editor Supabase sebelum membuat tugas kelompok.</p>'
+      : '';
 
     root.innerHTML = `
       <section class="hero"><span class="eyebrow">AREA PENGAMPU</span><h1>Kelola tugas ${escapeHTML(courses[0].name)}.</h1><p>Akun ini hanya dapat menambah dan menghapus tugas pada mata kuliah yang terhubung dengannya.</p><div class="hero-actions"><a class="button button-primary" href="kelas-pengacak-kelompok.html">🎲 Acak kelompok</a><button id="adminSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
@@ -232,6 +271,7 @@
           <div id="groupTaskFields" class="admin-form-fields group-task-fields" hidden>
             <p class="group-form-note">Satu tugas kelompok dibuat untuk satu kelompok. Isi nama kelompok, pertemuan, dan semua anggota kelompok.</p>
             ${groupSetupMessage}
+            ${studentSetupMessage}
             <label><span class="field-label">Nama kelompok *</span><input class="text-field" name="groupName" maxlength="80" placeholder="Contoh: Kelompok 1" required></label>
             <label><span class="field-label">Pertemuan *</span><select class="select-field" name="groupMeeting" required><option value="" selected disabled>Pilih pertemuan</option>${meetingOptions()}</select><small id="groupMeetingDeadline" class="field-help auto-deadline-note">Pilih pertemuan untuk menghitung deadline otomatis.</small></label>
             <div class="member-inputs-field">
@@ -375,6 +415,15 @@
       setFormError(message, 'Nama anggota tidak boleh duplikat. Hapus nama yang sama dari daftar.');
       return { ok: false };
     }
+    if (!studentProfiles.length) {
+      setFormError(message, 'Data akun mahasiswa belum tersedia. Jalankan supabase-students-setup.sql terlebih dahulu.');
+      return { ok: false };
+    }
+    const { memberRows, unmatchedNames } = getMemberRows(memberNames);
+    if (unmatchedNames.length) {
+      setFormError(message, `Nama belum cocok dengan akun mahasiswa: ${unmatchedNames.join(', ')}. Gunakan nama lengkap atau satu frasa nama yang unik.`);
+      return { ok: false };
+    }
 
     const { data: group, error: groupError } = await client
       .from('groups')
@@ -390,7 +439,7 @@
     }
 
     const { error: membersError } = await client.from('group_members').insert(
-      memberNames.map(name => ({ group_id: group.id, name })),
+      memberRows.map(member => ({ group_id: group.id, ...member })),
     );
     if (membersError) {
       await client.from('groups').delete().eq('id', group.id);

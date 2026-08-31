@@ -20,6 +20,7 @@
 
   const client = api.createClient(config.url, config.publishableKey);
   let managedCourse = null;
+  let studentProfiles = [];
   let generatedPlan = null;
 
   function setMessage(element, text, type = '') {
@@ -55,6 +56,26 @@
 
   function parseNames(value) {
     return value.split(/\r?\n/).map(name => name.trim()).filter(Boolean);
+  }
+
+  function normalizePersonName(value) {
+    return String(value ?? '')
+      .toLocaleLowerCase('id-ID')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  function findStudentProfile(name) {
+    const needle = normalizePersonName(name);
+    if (!needle) return null;
+    const exact = studentProfiles.filter(profile => normalizePersonName(profile.full_name) === needle);
+    if (exact.length === 1) return exact[0];
+    const phraseMatches = studentProfiles.filter(profile => {
+      const fullName = normalizePersonName(profile.full_name);
+      return needle.length >= 4 && (fullName.includes(needle) || needle.includes(fullName));
+    });
+    return phraseMatches.length === 1 ? phraseMatches[0] : null;
   }
 
   function findDuplicateName(names) {
@@ -114,7 +135,7 @@
         <div class="hero-actions"><a class="button button-secondary" href="kelas-admin.html">← Kembali ke admin</a></div>
       </section>
       <section class="panel admin-panel">
-        <div class="panel-heading"><div><h2>Data pengacakan</h2><p>Nama dalam setiap daftar ditulis satu per baris. Jumlah anggota setiap kelompok akan dibuat seimbang, dengan sebaran laki-laki dan perempuan diupayakan merata.</p></div></div>
+        <div class="panel-heading"><div><h2>Data pengacakan</h2><p>Nama dalam setiap daftar ditulis satu per baris. Gunakan nama lengkap atau satu frasa nama yang unik agar anggota tersambung ke akun mahasiswa. Jumlah anggota setiap kelompok akan dibuat seimbang, dengan sebaran laki-laki dan perempuan diupayakan merata.</p></div></div>
         <form id="groupRandomizerForm" class="admin-form">
           <div class="admin-form-grid">
             <label><span class="field-label">Mata kuliah</span><input class="text-field" value="${escapeHTML(managedCourse.name)}" readonly></label>
@@ -184,6 +205,15 @@
     setMessage(message, '');
     if (!allNames.length) {
       setMessage(message, 'Masukkan minimal satu nama pada daftar laki-laki atau perempuan.', 'error');
+      return;
+    }
+    if (!studentProfiles.length) {
+      setMessage(message, 'Data akun mahasiswa belum tersedia. Jalankan supabase-students-setup.sql terlebih dahulu.', 'error');
+      return;
+    }
+    const unmatchedNames = allNames.filter(name => !findStudentProfile(name));
+    if (unmatchedNames.length) {
+      setMessage(message, `Nama belum cocok dengan akun mahasiswa: ${unmatchedNames.join(', ')}. Gunakan nama lengkap atau satu frasa nama yang unik.`, 'error');
       return;
     }
     if (duplicateName) {
@@ -296,7 +326,7 @@
     if (groupError) throw new Error(`Kelompok “${group.name}” belum tersimpan: ${groupError.message}`);
 
     const { error: membersError } = await client.from('group_members').insert(
-      group.members.map(member => ({ group_id: savedGroup.id, name: member.name })),
+      group.members.map(member => ({ group_id: savedGroup.id, name: member.name, student_id: findStudentProfile(member.name).user_id })),
     );
     if (membersError) {
       await client.from('groups').delete().eq('id', savedGroup.id);
@@ -371,15 +401,17 @@
       root.innerHTML = '<div class="error-card"><strong>Akun belum memiliki akses mata kuliah.</strong><p>Masuklah melalui halaman Admin menggunakan akun mata kuliah yang sesuai.</p><a class="button button-primary" href="kelas-admin.html">Ke halaman admin</a></div>';
       return;
     }
-    const [{ data: courses, error: coursesError }, { data: assignments, error: assignmentsError }, { error: groupsError }] = await Promise.all([
+    const [{ data: courses, error: coursesError }, { data: assignments, error: assignmentsError }, { error: groupsError }, { data: profiles, error: profilesError }] = await Promise.all([
       client.from('courses').select('id, name'),
       client.from('course_admins').select('course_id'),
       client.from('groups').select('id').limit(1),
+      client.from('student_profiles').select('user_id, nim, full_name').order('full_name'),
     ]);
-    if (coursesError || assignmentsError) {
+    if (coursesError || assignmentsError || profilesError) {
       root.innerHTML = '<div class="error-card"><strong>Data mata kuliah belum dapat dimuat.</strong><p>Silakan muat ulang halaman atau kembali ke Admin.</p><a class="button button-primary" href="kelas-admin.html">Ke halaman admin</a></div>';
       return;
     }
+    studentProfiles = profiles || [];
     const courseId = assignments?.[0]?.course_id;
     const remoteCourse = courses?.find(course => course.id === courseId);
     managedCourse = remoteCourse ? { ...(courseDetailsById.get(courseId) || {}), ...remoteCourse } : null;
