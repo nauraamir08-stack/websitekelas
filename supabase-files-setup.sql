@@ -9,6 +9,10 @@ create table if not exists public.course_files (
   created_at timestamptz not null default now()
 );
 
+-- Aman dijalankan juga pada pemasangan yang sudah memiliki tabel course_files.
+alter table public.course_files
+  add column if not exists category text not null default 'Lainnya';
+
 alter table public.course_files enable row level security;
 revoke all on public.course_files from anon, authenticated;
 grant select on public.course_files to anon, authenticated;
