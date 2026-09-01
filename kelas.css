@@ -48,6 +48,10 @@ button { cursor: pointer; }
 .button-danger:hover { border-color: #c14545; color: #fff; background: var(--red); }
 
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0 30px; }
+.deadline-alert { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 13px; margin: -10px 0 22px; padding: 14px 16px; border: 1px solid #f3d59a; border-radius: 13px; color: #704700; background: #fff8e9; font-size: .87rem; }
+.deadline-alert strong { color: #9a5d00; }
+.deadline-alert span { flex: 1 1 300px; }
+.deadline-alert a { color: var(--primary); font-weight: 800; white-space: nowrap; }
 .stat-card, .panel, .task-card, .group-card { border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: 0 5px 18px rgba(25,33,59,.035); }
 .stat-card { padding: 18px; }
 .stat-card span { display: block; color: var(--muted); font-size: .82rem; font-weight: 700; }
@@ -196,6 +200,7 @@ button { cursor: pointer; }
 .file-item:hover { border-color: #cdd5f6; background: var(--primary-soft); }
 .file-icon { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border-radius: 9px; background: #fff; }
 .file-item strong, .file-item small { display: block; }
+.file-category { display: inline-block; margin-bottom: 3px; color: var(--primary-deep); font-size: .7rem; font-style: normal; font-weight: 800; }
 .file-item strong { font-size: .9rem; }
 .file-item small { margin-top: 2px; color: var(--muted); font-size: .75rem; }
 .file-open { margin-left: auto; color: var(--primary); font-size: .78rem; font-weight: 800; white-space: nowrap; }
