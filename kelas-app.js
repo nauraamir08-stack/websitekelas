@@ -354,6 +354,7 @@
         <div class="group-detail-item"><span class="field-label">Nama kelompok</span><strong>${escapeHTML(group.name)}</strong></div>
         <div class="group-detail-item"><span class="field-label">${task.meeting ? 'Pertemuan & deadline' : 'Deadline'}</span><strong>${escapeHTML(taskScheduleLabel(course, task))}</strong></div>
         <div class="group-detail-item task-description"><span class="field-label">Deskripsi tugas</span><p>${escapeHTML(task.description || 'Belum ada deskripsi untuk tugas ini.')}</p></div>
+        ${task.attachmentUrl ? `<div class="group-detail-item"><span class="field-label">Lampiran tugas</span><a class="attachment-link" href="${escapeHTML(task.attachmentUrl)}" target="_blank" rel="noopener">📎 ${escapeHTML(task.attachmentName || 'Buka lampiran')}</a></div>` : ''}
         <div class="group-detail-item"><span class="field-label">Nama anggota</span><ul class="member-list">${group.members.map(member => `<li><span class="member-avatar">${escapeHTML(member.name.split(' ').map(part => part[0]).slice(0, 2).join(''))}</span><strong>${escapeHTML(member.name)}</strong></li>`).join('') || '<li><strong>Anggota belum ditambahkan.</strong></li>'}</ul></div>
       </section>
     `;
