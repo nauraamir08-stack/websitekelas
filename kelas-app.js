@@ -191,6 +191,21 @@
     document.querySelector('[data-stat="tasks"]').textContent = String(allTasks.length);
     document.querySelector('[data-stat="groups"]').textContent = String(groupCount);
 
+    const now = new Date();
+    const deadlineAlerts = allTasks
+      .map(({ course, task }) => ({ course, task, deadline: getTaskDeadline(course, task) }))
+      .filter(item => item.deadline && new Date(item.deadline) >= now && new Date(item.deadline) - now <= 3 * 24 * 60 * 60 * 1000)
+      .sort((first, second) => new Date(first.deadline) - new Date(second.deadline));
+    const oldAlert = document.getElementById('deadlineAlert');
+    if (oldAlert) oldAlert.remove();
+    if (deadlineAlerts.length) {
+      const alert = document.createElement('section');
+      alert.id = 'deadlineAlert';
+      alert.className = 'deadline-alert';
+      alert.innerHTML = `<strong>⏰ Deadline mendekat</strong><span>${deadlineAlerts.slice(0, 3).map(({ course, task }) => `${escapeHTML(task.title)} · ${escapeHTML(course.name)}`).join(' • ')}</span><a href="kelas-tugas.html">Lihat tugas →</a>`;
+      document.querySelector('.stats-grid')?.insertAdjacentElement('afterend', alert);
+    }
+
     const courseList = document.getElementById('courseList');
     courseList.innerHTML = courses.map(course => `
       <a class="course-link" href="kelas-tugas.html?matkul=${encodeURIComponent(course.id)}">
