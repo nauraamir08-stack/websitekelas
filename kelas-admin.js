@@ -24,6 +24,28 @@
   let pendingDeleteTasks = [];
   let pendingSaveForm = null;
 
+  function passwordIcon(visible) {
+    return visible
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A10.7 10.7 0 0 1 12 4c5.2 0 8.7 4.1 9.7 6.5a1.4 1.4 0 0 1 0 1c-.6 1.5-1.9 3.3-3.9 4.6M6.5 6.5C4.1 7.9 2.7 10.2 2.3 11.5a1.4 1.4 0 0 0 0 1C3.3 14.9 6.8 19 12 19c1 0 2-.2 2.9-.5"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.3 11.5a1.4 1.4 0 0 0 0 1C3.3 14.9 6.8 19 12 19s8.7-4.1 9.7-6.5a1.4 1.4 0 0 0 0-1C20.7 9.1 17.2 5 12 5S3.3 9.1 2.3 11.5Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+
+  function setupPasswordToggles(scope) {
+    scope.querySelectorAll('[data-password-toggle]').forEach(button => {
+      const input = button.closest('.password-field')?.querySelector('input');
+      if (!input) return;
+      button.innerHTML = passwordIcon(false);
+      button.addEventListener('click', () => {
+        const visible = input.type === 'password';
+        input.type = visible ? 'text' : 'password';
+        button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+        button.setAttribute('title', visible ? 'Sembunyikan password' : 'Tampilkan password');
+        button.setAttribute('aria-pressed', String(visible));
+        button.innerHTML = passwordIcon(visible);
+      });
+    });
+  }
+
   function showLogin(message = '') {
     root.innerHTML = `
       <section class="hero"><span class="eyebrow">AREA ADMIN</span><h1>Kelola tugas kelas.</h1><p>Masuk menggunakan akun admin untuk menambahkan tugas tanpa mengubah kode website.</p></section>
@@ -32,12 +54,14 @@
         ${message ? `<p class="form-message form-message-error">${escapeHTML(message)}</p>` : ''}
         <form id="adminLoginForm" class="admin-form">
           <label><span class="field-label">Email</span><input class="text-field" name="email" type="email" autocomplete="email" required></label>
-          <label><span class="field-label">Kata sandi</span><input class="text-field" name="password" type="password" autocomplete="current-password" required></label>
+          <label><span class="field-label">Kata sandi</span><span class="password-field"><input class="text-field" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label>
           <button class="button button-primary" type="submit">Masuk →</button>
         </form>
       </section>
     `;
-    root.querySelector('#adminLoginForm').addEventListener('submit', signIn);
+    const form = root.querySelector('#adminLoginForm');
+    setupPasswordToggles(form);
+    form.addEventListener('submit', signIn);
   }
 
   async function signIn(event) {
@@ -298,7 +322,7 @@
           <h2>Hapus tugas</h2>
           <p id="deleteTaskDescription"></p>
           <form id="confirmDeleteTaskForm" class="admin-form">
-            <label><span class="field-label">Password akun mata kuliah *</span><input class="text-field" name="password" type="password" autocomplete="current-password" required></label>
+            <label><span class="field-label">Password akun mata kuliah *</span><span class="password-field"><input class="text-field" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label>
             <p id="deleteTaskMessage" class="form-message" aria-live="polite"></p>
             <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-delete-dialog>Batal</button><button class="button button-danger" type="submit">Konfirmasi hapus</button></div>
           </form>
@@ -311,7 +335,7 @@
           <h2>Simpan tugas</h2>
           <p>Masukkan password akun mata kuliah untuk menyimpan tugas ini.</p>
           <form id="confirmSaveTaskForm" class="admin-form">
-            <label><span class="field-label">Password akun *</span><input class="text-field" name="password" type="password" autocomplete="current-password" required></label>
+            <label><span class="field-label">Password akun *</span><span class="password-field"><input class="text-field" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label>
             <p id="saveTaskMessage" class="form-message" aria-live="polite"></p>
             <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-save-dialog>Batal</button><button class="button button-primary" type="submit">Verifikasi & simpan</button></div>
           </form>
@@ -325,6 +349,7 @@
     });
 
     const form = root.querySelector('#adminTaskForm');
+    setupPasswordToggles(root);
     form.dataset.groupTablesReady = String(groupTablesReady);
     form.addEventListener('submit', requestSaveTask);
     form.elements.type.addEventListener('change', () => setTaskType(form));

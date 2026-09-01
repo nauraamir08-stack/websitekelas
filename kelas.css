@@ -85,6 +85,11 @@ button { cursor: pointer; }
 .student-course-chips { display: flex; flex-wrap: wrap; gap: 9px; }
 .student-course-chips span { padding: 8px 11px; border-radius: 999px; color: var(--primary-deep); background: var(--primary-soft); font-size: .82rem; font-weight: 800; }
 .empty-inline { margin: 0; color: var(--muted); font-size: .88rem; }
+.password-field { position: relative; display: block; }
+.password-field .text-field { padding-right: 46px; }
+.password-toggle { position: absolute; top: 50%; right: 5px; display: grid; width: 34px; height: 34px; padding: 0; place-items: center; border: 0; border-radius: 8px; color: #68718a; background: transparent; transform: translateY(-50%); }
+.password-toggle:hover, .password-toggle:focus-visible { color: var(--primary); background: var(--primary-soft); outline: none; }
+.password-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .admin-panel { margin-top: 22px; }
 .admin-form { display: grid; gap: 15px; }
 .admin-form label { display: grid; gap: 6px; }

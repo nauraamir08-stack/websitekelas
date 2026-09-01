@@ -29,6 +29,28 @@
     });
   }
 
+  function passwordIcon(visible) {
+    return visible
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A10.7 10.7 0 0 1 12 4c5.2 0 8.7 4.1 9.7 6.5a1.4 1.4 0 0 1 0 1c-.6 1.5-1.9 3.3-3.9 4.6M6.5 6.5C4.1 7.9 2.7 10.2 2.3 11.5a1.4 1.4 0 0 0 0 1C3.3 14.9 6.8 19 12 19c1 0 2-.2 2.9-.5"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.3 11.5a1.4 1.4 0 0 0 0 1C3.3 14.9 6.8 19 12 19s8.7-4.1 9.7-6.5a1.4 1.4 0 0 0 0-1C20.7 9.1 17.2 5 12 5S3.3 9.1 2.3 11.5Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+
+  function setupPasswordToggles(scope) {
+    scope.querySelectorAll('[data-password-toggle]').forEach(button => {
+      const input = button.closest('.password-field')?.querySelector('input');
+      if (!input) return;
+      button.innerHTML = passwordIcon(false);
+      button.addEventListener('click', () => {
+        const visible = input.type === 'password';
+        input.type = visible ? 'text' : 'password';
+        button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+        button.setAttribute('title', visible ? 'Sembunyikan password' : 'Tampilkan password');
+        button.setAttribute('aria-pressed', String(visible));
+        button.innerHTML = passwordIcon(visible);
+      });
+    });
+  }
+
   function showLogin(message = '') {
     root.innerHTML = `
       <section class="hero student-hero"><span class="eyebrow">AKSES MAHASISWA</span><h1>Lihat tugas kamu.</h1><p>Masuk dengan NIM dan password untuk melihat tugas individu serta kelompok yang menjadi milikmu.</p></section>
@@ -37,12 +59,14 @@
         ${message ? `<p class="form-message form-message-error">${escapeHTML(message)}</p>` : ''}
         <form id="studentLoginForm" class="admin-form">
           <label><span class="field-label">NIM</span><input class="text-field" name="nim" inputmode="numeric" autocomplete="username" maxlength="20" placeholder="Contoh: 26010644279" required></label>
-          <label><span class="field-label">Password</span><input class="text-field" name="password" type="password" autocomplete="current-password" maxlength="72" required></label>
+          <label><span class="field-label">Password</span><span class="password-field"><input class="text-field" name="password" type="password" autocomplete="current-password" maxlength="72" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label>
           <button class="button button-primary" type="submit">Masuk ke tugas saya →</button>
         </form>
       </section>
     `;
-    root.querySelector('#studentLoginForm').addEventListener('submit', signIn);
+    const form = root.querySelector('#studentLoginForm');
+    setupPasswordToggles(form);
+    form.addEventListener('submit', signIn);
   }
 
   async function getOwnProfile() {
