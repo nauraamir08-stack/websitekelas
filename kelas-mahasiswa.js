@@ -20,7 +20,7 @@
   const client = api.createClient(config.url, config.publishableKey);
   const safeNextPage = () => {
     const next = params.get('next') || 'kelas-tugas.html';
-    return /^kelas-(tugas|kelompok)\.html(?:\?.*)?$/i.test(next) ? next : 'kelas-tugas.html';
+    return /^kelas-(tugas|kelompok|kelompok-saya)\.html(?:\?.*)?$/i.test(next) ? next : 'kelas-tugas.html';
   };
 
   function setActiveNavigation() {
