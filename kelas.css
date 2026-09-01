@@ -168,6 +168,8 @@ button { cursor: pointer; }
 .group-card p { color: var(--muted); line-height: 1.55; }
 .group-detail-card { display: grid; gap: 22px; max-width: 720px; margin: 22px auto 0; }
 .group-detail-item > strong { display: block; font-size: 1.05rem; }
+.task-description { padding: 15px; border: 1px solid #dce3f7; border-radius: 13px; background: #f8f9fe; }
+.task-description p { margin: 7px 0 0; color: #39435d; line-height: 1.6; white-space: pre-line; }
 .group-detail-item .member-list { margin-top: 8px; }
 .progress-label { display: flex; justify-content: space-between; margin: 18px 0 7px; color: var(--muted); font-size: .82rem; font-weight: 800; }
 .progress-track { overflow: hidden; height: 9px; border-radius: 99px; background: #e7eaf2; }
