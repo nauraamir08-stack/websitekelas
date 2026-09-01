@@ -113,6 +113,39 @@
     return short ? formatDate(deadline, true) : `Deadline ${formatDate(deadline)}`;
   }
 
+  function googleCalendarHref(course, task) {
+    const deadline = getTaskDeadline(course, task);
+    if (!deadline) return '';
+    const start = new Date(deadline);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const calendarDate = value => value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+    const title = `${task.title} · ${course.name}`;
+    const details = `${task.description || 'Deadline tugas.'}\nPengumpulan: ${task.submission || '-'}`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${calendarDate(start)}/${calendarDate(end)}&details=${encodeURIComponent(details)}`;
+  }
+
+  function setupBrowserReminder(allTasks) {
+    const oldPanel = document.getElementById('browserReminder');
+    if (oldPanel) oldPanel.remove();
+    const panel = document.createElement('section');
+    panel.id = 'browserReminder';
+    panel.className = 'browser-reminder';
+    const supported = 'Notification' in window;
+    const permission = supported ? Notification.permission : 'unsupported';
+    panel.innerHTML = `<div><strong>🔔 Pengingat browser</strong><span>${supported ? (permission === 'granted' ? 'Notifikasi browser sudah aktif.' : 'Aktifkan agar pengingat deadline muncul saat membuka portal.') : 'Browser ini belum mendukung notifikasi.'}</span></div>${supported && permission !== 'granted' ? '<button class="button button-secondary" type="button">Aktifkan notifikasi</button>' : ''}`;
+    document.querySelector('.stats-grid')?.insertAdjacentElement('afterend', panel);
+    const button = panel.querySelector('button');
+    if (!button) return;
+    button.addEventListener('click', async () => {
+      const result = await Notification.requestPermission();
+      if (result !== 'granted') { panel.querySelector('span').textContent = 'Izin notifikasi belum diberikan.'; return; }
+      panel.querySelector('span').textContent = 'Notifikasi browser sudah aktif.';
+      button.remove();
+      const nearest = allTasks.map(({ course, task }) => ({ course, task, deadline: getTaskDeadline(course, task) })).filter(item => item.deadline && new Date(item.deadline) > new Date()).sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+      if (nearest) new Notification('PGSD HERO CLASS', { body: `Deadline terdekat: ${nearest.task.title} · ${formatDate(nearest.deadline)}` });
+    });
+  }
+
   function courseOptions(selectedId) {
     return courses.map(course => `<option value="${escapeHTML(course.id)}" ${course.id === selectedId ? 'selected' : ''}>${escapeHTML(course.name)}</option>`).join('');
   }
@@ -190,6 +223,7 @@
     document.querySelector('[data-stat="courses"]').textContent = String(courseCount);
     document.querySelector('[data-stat="tasks"]').textContent = String(allTasks.length);
     document.querySelector('[data-stat="groups"]').textContent = String(groupCount);
+    setupBrowserReminder(allTasks);
 
     const now = new Date();
     const deadlineAlerts = allTasks
@@ -275,7 +309,7 @@
           <span class="due">${escapeHTML(taskScheduleLabel(course, task, true))}</span>
         </div>
         ${isGroup ? `<p class="group-task-deadline"><strong>Pertemuan ke-${escapeHTML(task.meeting || '-')}</strong>${deadline ? ` · Deadline: ${escapeHTML(formatDate(deadline))}` : ''}</p>` : `<p>${escapeHTML(task.description)}</p>`}
-        <div class="task-actions">${action}${attachment}</div>
+        <div class="task-actions">${action}${deadline ? `<a class="button button-secondary" href="${escapeHTML(googleCalendarHref(course, task))}" target="_blank" rel="noopener">📅 Google Calendar</a>` : ''}${attachment}</div>
       </article>
     `;
   }
@@ -289,6 +323,7 @@
       <h2>${escapeHTML(task.title)}</h2>
       <p>${escapeHTML(task.description)}</p>
       <p><strong>Deadline:</strong> ${formatDate(task.due)}<br><strong>Pengumpulan:</strong> ${escapeHTML(task.submission || '-')}</p>
+      ${task.due ? `<p><a class="button button-secondary" href="${escapeHTML(googleCalendarHref(course, task))}" target="_blank" rel="noopener">📅 Tambah ke Google Calendar</a></p>` : ''}
       <ul class="checklist">${task.checklist.map(item => `<li>${escapeHTML(item)}</li>`).join('')}</ul>
       ${task.attachmentUrl ? `<p><a class="attachment-link" href="${escapeHTML(task.attachmentUrl)}" target="_blank" rel="noopener">📎 ${escapeHTML(task.attachmentName || 'Buka lampiran')}</a></p>` : ''}
     `;
@@ -370,6 +405,7 @@
         <div class="group-detail-item"><span class="field-label">${task.meeting ? 'Pertemuan & deadline' : 'Deadline'}</span><strong>${escapeHTML(taskScheduleLabel(course, task))}</strong></div>
         <div class="group-detail-item task-description"><span class="field-label">Deskripsi tugas</span><p>${escapeHTML(task.description || 'Belum ada deskripsi untuk tugas ini.')}</p></div>
         ${task.attachmentUrl ? `<div class="group-detail-item"><span class="field-label">Lampiran tugas</span><a class="attachment-link" href="${escapeHTML(task.attachmentUrl)}" target="_blank" rel="noopener">📎 ${escapeHTML(task.attachmentName || 'Buka lampiran')}</a></div>` : ''}
+        ${getTaskDeadline(course, task) ? `<div class="group-detail-item"><span class="field-label">Pengingat</span><a class="button button-secondary" href="${escapeHTML(googleCalendarHref(course, task))}" target="_blank" rel="noopener">📅 Tambah ke Google Calendar</a></div>` : ''}
         <div class="group-detail-item"><span class="field-label">Nama anggota</span><ul class="member-list">${group.members.map(member => `<li><span class="member-avatar">${escapeHTML(member.name.split(' ').map(part => part[0]).slice(0, 2).join(''))}</span><strong>${escapeHTML(member.name)}</strong></li>`).join('') || '<li><strong>Anggota belum ditambahkan.</strong></li>'}</ul></div>
       </section>
     `;
