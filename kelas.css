@@ -172,6 +172,10 @@ button { cursor: pointer; }
 
 .group-layout { display: grid; grid-template-columns: .84fr 1.16fr; gap: 20px; margin-top: 22px; }
 .group-card { padding: 21px; }
+.my-groups-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+.my-group-card h2 { margin: 0 0 9px; font-size: 1.18rem; }
+.my-group-card h3 { margin: 20px 0 0; font-size: .86rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.my-group-card .member-list { margin-top: 9px; }
 .group-card h2 { margin: 0; font-size: 1.2rem; }
 .group-card p { color: var(--muted); line-height: 1.55; }
 .group-detail-card { display: grid; gap: 22px; max-width: 720px; margin: 22px auto 0; }
