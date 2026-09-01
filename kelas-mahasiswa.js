@@ -126,11 +126,60 @@
     root.innerHTML = `
       <section class="hero student-hero"><span class="eyebrow">DASHBOARD MAHASISWA</span><h1>Halo, ${escapeHTML(profile.full_name)}.</h1><p>NIM ${escapeHTML(profile.nim)} · ${escapeHTML(taskMessage)}</p><div class="hero-actions"><a class="button button-primary" href="${escapeHTML(safeNextPage())}">Lihat tugas saya →</a><button id="studentSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
       <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Mata kuliah dengan tugas</h2><p>Tugas kelompok hanya tampil jika kamu terdaftar sebagai anggota kelompok tersebut.</p></div></div><div class="student-course-chips">${activeCourses.map(name => `<span>${escapeHTML(name)}</span>`).join('') || '<p class="empty-inline">Belum ada tugas yang tersedia untukmu.</p>'}</div></section>
+      <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Ganti password</h2><p>Buat password baru untuk akunmu. Gunakan minimal 6 karakter.</p></div></div><form id="changeStudentPasswordForm" class="admin-form"><label><span class="field-label">Password saat ini *</span><span class="password-field"><input class="text-field" name="currentPassword" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><label><span class="field-label">Password baru *</span><span class="password-field"><input class="text-field" name="newPassword" type="password" autocomplete="new-password" minlength="6" maxlength="72" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><label><span class="field-label">Ulangi password baru *</span><span class="password-field"><input class="text-field" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="72" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><p id="changePasswordMessage" class="form-message" aria-live="polite"></p><button class="button button-primary" type="submit">Simpan password baru</button></form></section>
     `;
     root.querySelector('#studentSignOut').addEventListener('click', async () => {
       await client.auth.signOut();
       showLogin();
     });
+    const passwordForm = root.querySelector('#changeStudentPasswordForm');
+    setupPasswordToggles(passwordForm);
+    passwordForm.addEventListener('submit', event => changePassword(event, profile));
+  }
+
+  async function changePassword(event, profile) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const message = root.querySelector('#changePasswordMessage');
+    const button = form.querySelector('button[type="submit"]');
+    const currentPassword = form.elements.currentPassword.value;
+    const newPassword = form.elements.newPassword.value;
+    if (newPassword.length < 6) {
+      message.className = 'form-message form-message-error';
+      message.textContent = 'Password baru minimal 6 karakter.';
+      return;
+    }
+    if (newPassword !== form.elements.confirmPassword.value) {
+      message.className = 'form-message form-message-error';
+      message.textContent = 'Ulangi password baru harus sama.';
+      return;
+    }
+    button.disabled = true;
+    button.textContent = 'Memeriksa password…';
+    const { data: { user }, error: userError } = await client.auth.getUser();
+    const { error: verifyError } = userError || !user?.email
+      ? { error: new Error('Sesi tidak valid.') }
+      : await client.auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (verifyError) {
+      message.className = 'form-message form-message-error';
+      message.textContent = 'Password saat ini tidak sesuai.';
+      button.disabled = false;
+      button.textContent = 'Simpan password baru';
+      return;
+    }
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    if (error) {
+      message.className = 'form-message form-message-error';
+      message.textContent = `Password belum diperbarui: ${error.message}`;
+      button.disabled = false;
+      button.textContent = 'Simpan password baru';
+      return;
+    }
+    form.reset();
+    message.className = 'form-message form-message-success';
+    message.textContent = `Password untuk akun ${profile.nim} berhasil diperbarui.`;
+    button.disabled = false;
+    button.textContent = 'Simpan password baru';
   }
 
   async function start() {
