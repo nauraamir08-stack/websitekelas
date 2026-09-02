@@ -290,7 +290,9 @@
 
   function renderHome() {
     const courseCount = courses.length;
-    const allTasks = courses.flatMap(course => (course.tasks || []).map(task => ({ course, task })));
+    // Tugas di beranda harus mengikuti mahasiswa yang sedang login:
+    // tugas individu untuk semua mahasiswa, tugas kelompok hanya untuk kelompoknya sendiri.
+    const allTasks = courses.flatMap(course => getVisibleTasks(course).map(task => ({ course, task })));
     const groupCount = allTasks.filter(({ task }) => task.type === 'kelompok').length;
     document.querySelector('[data-stat="courses"]').textContent = String(courseCount);
     document.querySelector('[data-stat="tasks"]').textContent = String(allTasks.length);
@@ -503,7 +505,7 @@
     setupNavigation();
     setupThemeToggle();
     await updateStudentNavigation();
-    if ((page === 'tasks' || page === 'group') && !(await requireStudentSession())) return;
+    if ((page === 'home' || page === 'tasks' || page === 'group') && !(await requireStudentSession())) return;
     await loadAnnouncement();
     if (page === 'home' || page === 'tasks' || page === 'group') await loadPortalData();
     if (page === 'home') renderHome();
