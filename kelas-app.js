@@ -209,6 +209,14 @@
     });
   }
 
+  function setupThemeToggle() {
+    if (document.querySelector('[data-theme-toggle]')) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'theme-toggle'; button.dataset.themeToggle = '1'; button.textContent = localStorage.getItem('theme') === 'dark' ? '☀️' : '🌙'; button.title = 'Ganti tema';
+    document.querySelector('.main-nav')?.appendChild(button);
+    if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    button.addEventListener('click', () => { const dark = document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', dark ? 'dark' : 'light'); button.textContent = dark ? '☀️' : '🌙'; });
+  }
+
   function studentLoginHref(reason = '') {
     const fileName = window.location.pathname.split('/').pop() || 'kelas-tugas.html';
     const query = new URLSearchParams({ next: `${fileName}${window.location.search}` });
@@ -379,6 +387,8 @@
     const params = new URLSearchParams(window.location.search);
     let course = getCourse(params.get('matkul'));
     let filter = 'semua';
+    let search = '';
+    let deadlineRange = 'semua';
     const courseSelect = document.getElementById('courseSelect');
     const courseTitle = document.getElementById('courseTitle');
     const courseInfo = document.getElementById('courseInfo');
@@ -395,7 +405,8 @@
       courseTitle.textContent = course.name;
       courseInfo.textContent = `${course.lecturer} · ${course.schedule}`;
       const tasks = course.tasks || [];
-      const visibleTasks = filter === 'semua' ? tasks : tasks.filter(task => task.type === filter);
+      const now = Date.now();
+      const visibleTasks = tasks.filter(task => (filter === 'semua' || task.type === filter) && (!search || `${task.title} ${task.description}`.toLocaleLowerCase('id-ID').includes(search)) && (deadlineRange === 'semua' || (getTaskDeadline(course, task) && new Date(getTaskDeadline(course, task)).getTime() <= now + (deadlineRange === 'minggu' ? 7 : 30) * 86400000)));
       taskList.innerHTML = visibleTasks.map(task => taskCard(course, task)).join('') || '<div class="empty-state">Belum ada tugas pada kategori ini.</div>';
       taskList.querySelectorAll('[data-task-detail]').forEach(button => {
         button.addEventListener('click', () => showTaskDialog(course, getTask(course, button.dataset.taskDetail)));
@@ -415,6 +426,8 @@
         render();
       });
     });
+    document.getElementById('taskSearch')?.addEventListener('input', event => { search = event.target.value.trim().toLocaleLowerCase('id-ID'); render(); });
+    document.getElementById('deadlineFilter')?.addEventListener('change', event => { deadlineRange = event.target.value; render(); });
     render();
     const calendar = document.getElementById('deadlineCalendar');
     if (calendar) {
@@ -463,6 +476,7 @@
 
   async function start() {
     setupNavigation();
+    setupThemeToggle();
     await updateStudentNavigation();
     if ((page === 'tasks' || page === 'group') && !(await requireStudentSession())) return;
     await loadAnnouncement();
