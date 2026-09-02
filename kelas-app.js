@@ -43,6 +43,19 @@
     showAnnouncement(data);
   }
 
+  function showNewTaskCard(tasks, courseById) {
+    if (page !== 'tasks' || !tasks?.length) return;
+    const recent = tasks.filter(task => {
+      const created = new Date(task.created_at || task.updated_at || 0);
+      return !Number.isNaN(created.getTime()) && (Date.now() - created.getTime()) < 14 * 24 * 60 * 60 * 1000;
+    }).sort((a, b) => new Date(b.created_at || b.updated_at) - new Date(a.created_at || a.updated_at)).slice(0, 3);
+    if (!recent.length) return;
+    const card = document.createElement('section'); card.id = 'newTaskNotice'; card.className = 'new-task-card';
+    card.innerHTML = `<div class="new-task-card-icon">✨</div><div><span class="eyebrow">TUGAS BARU</span><h2>Ada tugas baru</h2><p>${recent.map(task => `<strong>${escapeHTML(task.title)}</strong> · ${escapeHTML(courseById.get(task.course_id) || 'Mata kuliah')}`).join('<br>')}</p></div><button type="button" class="new-task-dismiss" aria-label="Tutup notifikasi">×</button>`;
+    card.querySelector('.new-task-dismiss').addEventListener('click', () => card.remove());
+    document.querySelector('.page')?.prepend(card);
+  }
+
   function normalizeTask(task) {
     return {
       id: task.id,
@@ -74,6 +87,7 @@
       tasks.push(normalizeTask(task));
       tasksByCourse.set(task.course_id, tasks);
     });
+    showNewTaskCard(remoteTasks, new Map(remoteCourses.map(course => [course.id, course.name])));
     courses.forEach(course => {
       const remoteCourse = remoteCourseById.get(course.id);
       if (remoteCourse) {
