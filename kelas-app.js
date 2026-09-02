@@ -389,6 +389,8 @@
     let filter = 'semua';
     let search = '';
     let deadlineRange = 'semua';
+    let showArchived = false;
+    let calendarDate = new Date();
     const courseSelect = document.getElementById('courseSelect');
     const courseTitle = document.getElementById('courseTitle');
     const courseInfo = document.getElementById('courseInfo');
@@ -406,7 +408,7 @@
       courseInfo.textContent = `${course.lecturer} · ${course.schedule}`;
       const tasks = course.tasks || [];
       const now = Date.now();
-      const visibleTasks = tasks.filter(task => (filter === 'semua' || task.type === filter) && (!search || `${task.title} ${task.description}`.toLocaleLowerCase('id-ID').includes(search)) && (deadlineRange === 'semua' || (getTaskDeadline(course, task) && new Date(getTaskDeadline(course, task)).getTime() <= now + (deadlineRange === 'minggu' ? 7 : 30) * 86400000)));
+      const visibleTasks = tasks.filter(task => (showArchived || !getTaskDeadline(course, task) || new Date(getTaskDeadline(course, task)).getTime() >= now) && (filter === 'semua' || task.type === filter) && (!search || `${task.title} ${task.description}`.toLocaleLowerCase('id-ID').includes(search)) && (deadlineRange === 'semua' || (getTaskDeadline(course, task) && new Date(getTaskDeadline(course, task)).getTime() <= now + (deadlineRange === 'minggu' ? 7 : 30) * 86400000)));
       taskList.innerHTML = visibleTasks.map(task => taskCard(course, task)).join('') || '<div class="empty-state">Belum ada tugas pada kategori ini.</div>';
       taskList.querySelectorAll('[data-task-detail]').forEach(button => {
         button.addEventListener('click', () => showTaskDialog(course, getTask(course, button.dataset.taskDetail)));
@@ -428,11 +430,12 @@
     });
     document.getElementById('taskSearch')?.addEventListener('input', event => { search = event.target.value.trim().toLocaleLowerCase('id-ID'); render(); });
     document.getElementById('deadlineFilter')?.addEventListener('change', event => { deadlineRange = event.target.value; render(); });
+    document.getElementById('showArchived')?.addEventListener('change', event => { showArchived = event.target.checked; render(); });
     render();
     const calendar = document.getElementById('deadlineCalendar');
     if (calendar) {
       const items = courses.flatMap(item => (item.tasks || []).map(task => ({ course: item, task, deadline: getTaskDeadline(item, task) }))).filter(item => item.deadline).sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
-      calendar.innerHTML = items.length ? items.slice(0, 12).map(item => `<div class="calendar-item"><time>${escapeHTML(formatDate(item.deadline, true))}</time><span><strong>${escapeHTML(item.task.title)}</strong><small>${escapeHTML(item.course.name)}</small></span></div>`).join('') : '<p class="empty-inline">Belum ada deadline.</p>';
+      const renderCalendar = () => { const y=calendarDate.getFullYear(), m=calendarDate.getMonth(); const monthName=calendarDate.toLocaleDateString('id-ID',{month:'long',year:'numeric'}); document.getElementById('calendarMonth').textContent=monthName; const first=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate(); let html=['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(day=>`<span class="calendar-weekday">${day}</span>`).join(''); for(let i=0;i<first;i++) html+='<span class="calendar-day is-empty"></span>'; for(let d=1;d<=days;d++){const matches=items.filter(item=>{const dt=new Date(item.deadline);return dt.getFullYear()===y&&dt.getMonth()===m&&dt.getDate()===d}); html+=`<span class="calendar-day"><b>${d}</b>${matches.map(item=>`<small title="${escapeHTML(item.task.title)}">${escapeHTML(item.task.title)}</small>`).join('')}</span>`;} calendar.innerHTML=html; }; renderCalendar(); document.getElementById('calendarPrev')?.addEventListener('click',()=>{calendarDate.setMonth(calendarDate.getMonth()-1);renderCalendar()}); document.getElementById('calendarNext')?.addEventListener('click',()=>{calendarDate.setMonth(calendarDate.getMonth()+1);renderCalendar()});
     }
   }
 
