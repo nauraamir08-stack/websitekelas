@@ -250,6 +250,16 @@ dialog::backdrop { background: rgba(20,28,60,.46); }
 .calendar-item span { display:grid; gap:2px; }
 .calendar-item small { color:var(--muted); }
 .dashboard-progress-value { color:var(--primary); font-size:1.45rem; }
+.task-tools { display:flex; gap:10px; margin:14px 0; }
+.task-tools .text-field { flex:1; }
+.task-tools .select-field { width:auto; min-width:180px; }
+.profile-card { display:flex; align-items:center; gap:16px; }
+.profile-avatar { display:grid; flex:0 0 54px; width:54px; height:54px; place-items:center; border-radius:50%; background:var(--primary-soft); color:var(--primary); font-size:1.15rem; font-weight:800; }
+.theme-toggle { border:1px solid var(--line); border-radius:9px; padding:7px 9px; background:transparent; cursor:pointer; }
+body.dark-mode { --ink:#eef2ff; --muted:#aeb9d7; --line:#33446f; --surface:#172449; background:#0d1732; color:var(--ink); }
+body.dark-mode .site-header, body.dark-mode .panel, body.dark-mode .task-card, body.dark-mode .course-summary, body.dark-mode .group-card { background:#172449; border-color:#33446f; }
+body.dark-mode .text-field, body.dark-mode .select-field { color:var(--ink); background:#101c3d; border-color:#40527e; }
+@media (max-width:760px){.task-tools{flex-direction:column}.task-tools .select-field{width:100%}.profile-card{align-items:flex-start;}}
 .maintenance-overlay { position:fixed; inset:0; z-index:100000; display:grid; place-items:center; padding:20px; background:rgba(14,26,62,.78); }
 .maintenance-card { width:min(480px,100%); padding:30px 26px; border-radius:22px; background:#fff; color:var(--ink); text-align:center; box-shadow:0 24px 70px rgba(0,0,0,.28); }
 .maintenance-card h1 { margin:8px 0 10px; font-size:clamp(1.55rem,5vw,2.15rem); }
