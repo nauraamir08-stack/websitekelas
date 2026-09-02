@@ -112,7 +112,7 @@
 
   async function showDashboard(profile) {
     const [{ data: tasks, error: taskError }, { data: courses, error: courseError }] = await Promise.all([
-      client.from('tasks').select('id, type, course_id'),
+      client.from('tasks').select('id, type, title, due_at, course_id'),
       client.from('courses').select('id, name'),
     ]);
     const courseNameById = new Map((courses || []).map(course => [course.id, course.name]));
@@ -124,11 +124,13 @@
     const activeCourses = [...new Set((tasks || []).map(task => courseNameById.get(task.course_id)).filter(Boolean))];
     const completedCount = (tasks || []).filter(task => localStorage.getItem(`task-status-${task.id}`) === 'Sudah dikumpulkan').length;
     const progressPercent = tasks?.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+    const upcomingDeadlines = (tasks || []).filter(task => task.due_at).sort((a, b) => new Date(a.due_at) - new Date(b.due_at)).slice(0, 12);
 
     root.innerHTML = `
       <section class="hero student-hero"><span class="eyebrow">DASHBOARD MAHASISWA</span><h1>Halo, ${escapeHTML(profile.full_name)}.</h1><p>NIM ${escapeHTML(profile.nim)} · ${escapeHTML(taskMessage)}</p><div class="hero-actions"><a class="button button-primary" href="${escapeHTML(safeNextPage())}">Lihat tugas saya →</a><button id="studentSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
       <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Mata kuliah dengan tugas</h2><p>Tugas kelompok hanya tampil jika kamu terdaftar sebagai anggota kelompok tersebut.</p></div></div><div class="student-course-chips">${activeCourses.map(name => `<span>${escapeHTML(name)}</span>`).join('') || '<p class="empty-inline">Belum ada tugas yang tersedia untukmu.</p>'}</div></section>
       <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Progres tugas</h2><p>${completedCount} dari ${tasks?.length || 0} tugas ditandai sudah dikumpulkan.</p></div><strong class="dashboard-progress-value">${progressPercent}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${progressPercent}%"></div></div></section>
+      <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Kalender deadline</h2><p>Deadline tugas yang perlu diperhatikan.</p></div></div><div class="student-deadline-calendar">${upcomingDeadlines.length ? upcomingDeadlines.map(task => `<div class="calendar-item"><time>${escapeHTML(new Date(task.due_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}))}</time><span><strong>${escapeHTML(task.title || 'Tugas')}</strong><small>${escapeHTML(courseNameById.get(task.course_id) || 'Mata kuliah')}</small></span></div>`).join('') : '<p class="empty-inline">Belum ada deadline tugas.</p>'}</div></section>
       <section class="panel student-summary-panel"><div class="panel-heading"><div><h2>Ganti password</h2><p>Buat password baru untuk akunmu. Gunakan minimal 6 karakter.</p></div></div><form id="changeStudentPasswordForm" class="admin-form"><label><span class="field-label">Password saat ini *</span><span class="password-field"><input class="text-field" name="currentPassword" type="password" autocomplete="current-password" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><label><span class="field-label">Password baru *</span><span class="password-field"><input class="text-field" name="newPassword" type="password" autocomplete="new-password" minlength="6" maxlength="72" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><label><span class="field-label">Ulangi password baru *</span><span class="password-field"><input class="text-field" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="72" required><button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false" title="Tampilkan password"></button></span></label><p id="changePasswordMessage" class="form-message" aria-live="polite"></p><button class="button button-primary" type="submit">Simpan password baru</button></form></section>
     `;
     root.querySelector('#studentSignOut').addEventListener('click', async () => {
