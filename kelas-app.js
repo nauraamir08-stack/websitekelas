@@ -18,6 +18,31 @@
   const getCourse = id => courses.find(course => course.id === id) || courses[0];
   const getTask = (course, taskId) => course?.tasks.find(task => task.id === taskId);
 
+  function showAnnouncement(announcement) {
+    document.getElementById('siteAnnouncement')?.remove();
+    if (!announcement) return;
+    if (announcement.maintenance_enabled) {
+      const gate = document.createElement('div');
+      gate.id = 'siteAnnouncement';
+      gate.className = 'maintenance-overlay';
+      gate.innerHTML = `<section class="maintenance-card"><span class="eyebrow">PEMBERITAHUAN</span><h1>Website sedang maintenance</h1><p>${escapeHTML(announcement.maintenance_message)}</p><small>Silakan kembali beberapa saat lagi.</small></section>`;
+      document.body.appendChild(gate);
+      return;
+    }
+    if (announcement.task_update_enabled && page === 'tasks') {
+      const banner = document.createElement('section');
+      banner.id = 'siteAnnouncement'; banner.className = 'task-update-card';
+      banner.innerHTML = `<div class="task-update-card-icon">📣</div><div><span class="eyebrow">INFORMASI TUGAS</span><h2>Pengelola sedang menambahkan tugas</h2><p>${escapeHTML(announcement.task_update_message)}</p></div>`;
+      document.querySelector('.page')?.prepend(banner);
+    }
+  }
+
+  async function loadAnnouncement() {
+    if (!supabaseClient) return;
+    const { data } = await supabaseClient.from('site_announcements').select('*').eq('id', 1).maybeSingle();
+    showAnnouncement(data);
+  }
+
   function normalizeTask(task) {
     return {
       id: task.id,
@@ -415,6 +440,7 @@
     setupNavigation();
     await updateStudentNavigation();
     if ((page === 'tasks' || page === 'group') && !(await requireStudentSession())) return;
+    await loadAnnouncement();
     if (page === 'home' || page === 'tasks' || page === 'group') await loadPortalData();
     if (page === 'home') renderHome();
     if (page === 'tasks') setupTasksPage();
