@@ -18,6 +18,7 @@ create table if not exists public.group_members (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups(id) on delete cascade,
   name text not null,
+  student_id uuid,
   created_at timestamptz not null default now()
 );
 
@@ -25,7 +26,9 @@ create table if not exists public.group_members (
 alter table public.group_members drop column if exists role;
 alter table public.group_members drop column if exists status;
 alter table public.group_members drop column if exists task;
-create unique index if not exists group_members_group_name_unique
+alter table public.group_members add column if not exists student_id uuid;
+drop index if exists public.group_members_group_name_unique;
+create index if not exists group_members_group_name_index
 on public.group_members (group_id, name);
 
 alter table public.tasks add column if not exists group_id uuid
