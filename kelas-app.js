@@ -10,6 +10,7 @@
     ? window.supabase.createClient(config.url, config.publishableKey)
     : null;
   const courses = portal.courses || [];
+  let currentStudentProfile = null;
 
   const escapeHTML = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
@@ -20,6 +21,21 @@
   const taskStatusKey = task => `task-status-${task.id}`;
   const getTaskStatus = task => localStorage.getItem(taskStatusKey(task)) || 'Belum dikerjakan';
   const setTaskStatus = (task, status) => localStorage.setItem(taskStatusKey(task), status);
+  const normalizePersonName = value => String(value || '').toLocaleLowerCase('id-ID').replace(/[^a-z0-9]+/g, ' ').trim();
+
+  function isTaskVisibleToCurrentStudent(course, task) {
+    // Tugas individu berlaku untuk semua mahasiswa yang sedang login.
+    if (task.type !== 'kelompok') return true;
+    if (!currentStudentProfile || !task.groupId) return false;
+    const group = getTaskGroup(course, task);
+    if (!group) return false;
+    return group.members.some(member =>
+      member.studentId === currentStudentProfile.user_id ||
+      (!member.studentId && normalizePersonName(member.name) === normalizePersonName(currentStudentProfile.full_name))
+    );
+  }
+
+  const getVisibleTasks = course => (course.tasks || []).filter(task => isTaskVisibleToCurrentStudent(course, task));
 
   function showAnnouncement(announcement) {
     document.getElementById('siteAnnouncement')?.remove();
@@ -90,7 +106,6 @@
       tasks.push(normalizeTask(task));
       tasksByCourse.set(task.course_id, tasks);
     });
-    showNewTaskCard(remoteTasks, new Map(remoteCourses.map(course => [course.id, course.name])));
     courses.forEach(course => {
       const remoteCourse = remoteCourseById.get(course.id);
       if (remoteCourse) {
@@ -102,7 +117,7 @@
 
     const { data: remoteGroups, error: groupsError } = await supabaseClient
       .from('groups')
-      .select('id, course_id, name, group_members(name)')
+.select('id, course_id, name, group_members(name, student_id)')
       .order('name', { ascending: true });
     if (groupsError) return;
 
@@ -112,13 +127,19 @@
       groups.push({
         id: group.id,
         name: group.name,
-        members: (group.group_members || []).map(member => ({ name: member.name })),
+        members: (group.group_members || []).map(member => ({ name: member.name, studentId: member.student_id || null })),
       });
       groupsByCourse.set(group.course_id, groups);
     });
     courses.forEach(course => {
       course.groups = groupsByCourse.get(course.id) || [];
     });
+    const visibleRemoteTasks = remoteTasks.filter(remoteTask => {
+      const course = courses.find(item => item.id === remoteTask.course_id);
+      const task = course?.tasks?.find(item => item.id === remoteTask.id);
+      return course && task && isTaskVisibleToCurrentStudent(course, task);
+    });
+    showNewTaskCard(visibleRemoteTasks, new Map(remoteCourses.map(course => [course.id, course.name])));
   }
 
   const getTaskGroup = (course, task) => course?.groups?.find(group => group.id === task.groupId) || null;
@@ -235,7 +256,7 @@
     }
     const { data: profile } = await supabaseClient
       .from('student_profiles')
-      .select('nim')
+.select('user_id, nim, full_name')
       .eq('user_id', session.user.id)
       .maybeSingle();
     if (profile) {
@@ -256,13 +277,14 @@
     }
     const { data: profile, error } = await supabaseClient
       .from('student_profiles')
-      .select('nim')
+.select('user_id, nim, full_name')
       .eq('user_id', session.user.id)
       .maybeSingle();
     if (error || !profile) {
       window.location.replace(studentLoginHref('student-only'));
       return false;
     }
+    currentStudentProfile = profile;
     return true;
   }
 
@@ -406,7 +428,7 @@
       courseSelect.innerHTML = courseOptions(course.id);
       courseTitle.textContent = course.name;
       courseInfo.textContent = `${course.lecturer} · ${course.schedule}`;
-      const tasks = course.tasks || [];
+      const tasks = getVisibleTasks(course);
       const now = Date.now();
       const visibleTasks = tasks.filter(task => (showArchived || !getTaskDeadline(course, task) || new Date(getTaskDeadline(course, task)).getTime() >= now) && (filter === 'semua' || task.type === filter) && (!search || `${task.title} ${task.description}`.toLocaleLowerCase('id-ID').includes(search)) && (deadlineRange === 'semua' || (getTaskDeadline(course, task) && new Date(getTaskDeadline(course, task)).getTime() <= now + (deadlineRange === 'minggu' ? 7 : 30) * 86400000)));
       taskList.innerHTML = visibleTasks.map(task => taskCard(course, task)).join('') || '<div class="empty-state">Belum ada tugas pada kategori ini.</div>';
@@ -434,7 +456,7 @@
     render();
     const calendar = document.getElementById('deadlineCalendar');
     if (calendar) {
-      const items = courses.flatMap(item => (item.tasks || []).map(task => ({ course: item, task, deadline: getTaskDeadline(item, task) }))).filter(item => item.deadline).sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+      const items = courses.flatMap(item => getVisibleTasks(item).map(task => ({ course: item, task, deadline: getTaskDeadline(item, task) }))).filter(item => item.deadline).sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
       const renderCalendar = () => { const y=calendarDate.getFullYear(), m=calendarDate.getMonth(); const monthName=calendarDate.toLocaleDateString('id-ID',{month:'long',year:'numeric'}); document.getElementById('calendarMonth').textContent=monthName; const first=new Date(y,m,1).getDay(); const days=new Date(y,m+1,0).getDate(); let html=['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(day=>`<span class="calendar-weekday">${day}</span>`).join(''); for(let i=0;i<first;i++) html+='<span class="calendar-day is-empty"></span>'; for(let d=1;d<=days;d++){const matches=items.filter(item=>{const dt=new Date(item.deadline);return dt.getFullYear()===y&&dt.getMonth()===m&&dt.getDate()===d}); html+=`<span class="calendar-day"><b>${d}</b>${matches.map(item=>`<small title="${escapeHTML(item.task.title)}">${escapeHTML(item.task.title)}</small>`).join('')}</span>`;} calendar.innerHTML=html; }; renderCalendar(); document.getElementById('calendarPrev')?.addEventListener('click',()=>{calendarDate.setMonth(calendarDate.getMonth()-1);renderCalendar()}); document.getElementById('calendarNext')?.addEventListener('click',()=>{calendarDate.setMonth(calendarDate.getMonth()+1);renderCalendar()});
     }
   }
@@ -460,8 +482,8 @@
     const task = getTask(course, params.get('tugas')) || course.tasks.find(item => item.type === 'kelompok');
     const group = course.groups.find(item => item.id === task?.groupId);
     const root = document.getElementById('groupPage');
-    if (!task || task.type !== 'kelompok' || !group) {
-      root.innerHTML = '<div class="error-card"><strong>Halaman kelompok tidak ditemukan.</strong><p>Kembali ke halaman tugas dan pilih tugas kelompok yang tersedia.</p><a class="button button-secondary" href="kelas-tugas.html">Kembali ke tugas</a></div>';
+    if (!task || task.type !== 'kelompok' || !group || !isTaskVisibleToCurrentStudent(course, task)) {
+      root.innerHTML = '<div class="error-card"><strong>Kelompok tidak dapat diakses.</strong><p>Anda hanya dapat membuka kelompok yang menjadi bagian Anda.</p><a class="button button-secondary" href="kelas-tugas.html">Kembali ke tugas saya</a></div>';
       return;
     }
     root.innerHTML = `
