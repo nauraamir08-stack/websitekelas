@@ -249,6 +249,16 @@ dialog::backdrop { background: rgba(20,28,60,.46); }
 .calendar-item time { min-width:70px; color:var(--primary); font-weight:800; }
 .calendar-item span { display:grid; gap:2px; }
 .calendar-item small { color:var(--muted); }
+.calendar-controls { display:flex; align-items:center; gap:8px; }
+.calendar-controls .button { min-height:32px; padding:5px 10px; }
+.month-calendar { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
+.calendar-weekday { padding:6px; color:var(--muted); font-size:.72rem; font-weight:800; text-align:center; }
+.calendar-day { min-height:74px; padding:7px; border:1px solid var(--line); border-radius:9px; background:#fafbff; }
+.calendar-day b { display:block; color:var(--primary); font-size:.8rem; }
+.calendar-day small { display:block; overflow:hidden; margin-top:5px; padding:3px 4px; border-radius:4px; background:var(--primary-soft); color:var(--primary-deep); font-size:.65rem; text-overflow:ellipsis; white-space:nowrap; }
+.calendar-day.is-empty { border-color:transparent; background:transparent; }
+.archive-toggle { display:flex; gap:8px; align-items:center; margin:12px 0; color:var(--muted); font-size:.86rem; }
+@media(max-width:760px){.calendar-day{min-height:58px;padding:5px}.calendar-day small{font-size:.58rem}.calendar-controls .button{padding:4px 8px}}
 .dashboard-progress-value { color:var(--primary); font-size:1.45rem; }
 .task-tools { display:flex; gap:10px; margin:14px 0; }
 .task-tools .text-field { flex:1; }
