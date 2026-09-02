@@ -17,6 +17,9 @@
 
   const getCourse = id => courses.find(course => course.id === id) || courses[0];
   const getTask = (course, taskId) => course?.tasks.find(task => task.id === taskId);
+  const taskStatusKey = task => `task-status-${task.id}`;
+  const getTaskStatus = task => localStorage.getItem(taskStatusKey(task)) || 'Belum dikerjakan';
+  const setTaskStatus = (task, status) => localStorage.setItem(taskStatusKey(task), status);
 
   function showAnnouncement(announcement) {
     document.getElementById('siteAnnouncement')?.remove();
@@ -195,8 +198,8 @@
   }
 
   function statusClass(status) {
-    if (status === 'Selesai') return 'status-selesai';
-    if (status === 'Berjalan') return 'status-berjalan';
+    if (status === 'Sudah dikumpulkan') return 'status-selesai';
+    if (status === 'Sedang dikerjakan') return 'status-berjalan';
     return 'status-belum';
   }
 
@@ -338,6 +341,7 @@
     const attachment = task.attachmentUrl
       ? `<a class="attachment-link" href="${escapeHTML(task.attachmentUrl)}" target="_blank" rel="noopener">📎 ${escapeHTML(task.attachmentName || 'Buka lampiran')}</a>`
       : '';
+    const status = getTaskStatus(task);
     return `
       <article class="task-card">
         <div class="task-topline">
@@ -348,6 +352,7 @@
           <span class="due">${escapeHTML(taskScheduleLabel(course, task, true))}</span>
         </div>
         ${isGroup ? `<p class="group-task-deadline"><strong>Pertemuan ke-${escapeHTML(task.meeting || '-')}</strong>${deadline ? ` · Deadline: ${escapeHTML(formatDate(deadline))}` : ''}</p>` : `<p>${escapeHTML(task.description)}</p>`}
+        <div class="task-status-row"><span class="task-status ${statusClass(status)}">${escapeHTML(status)}</span><select class="select-field task-status-select" data-task-status="${escapeHTML(task.id)}" aria-label="Status pengumpulan"><option ${status === 'Belum dikerjakan' ? 'selected' : ''}>Belum dikerjakan</option><option ${status === 'Sedang dikerjakan' ? 'selected' : ''}>Sedang dikerjakan</option><option ${status === 'Sudah dikumpulkan' ? 'selected' : ''}>Sudah dikumpulkan</option><option ${status === 'Terlambat' ? 'selected' : ''}>Terlambat</option></select></div>
         <div class="task-actions">${action}${deadline ? `<a class="button button-secondary" href="${escapeHTML(googleCalendarHref(course, task))}" target="_blank" rel="noopener">📅 Google Calendar</a>` : ''}${attachment}</div>
       </article>
     `;
@@ -395,6 +400,7 @@
       taskList.querySelectorAll('[data-task-detail]').forEach(button => {
         button.addEventListener('click', () => showTaskDialog(course, getTask(course, button.dataset.taskDetail)));
       });
+      taskList.querySelectorAll('[data-task-status]').forEach(select => select.addEventListener('change', () => { const task = getTask(course, select.dataset.taskStatus); if (task) { setTaskStatus(task, select.value); render(); } }));
     }
 
     courseSelect.addEventListener('change', () => {
@@ -410,6 +416,11 @@
       });
     });
     render();
+    const calendar = document.getElementById('deadlineCalendar');
+    if (calendar) {
+      const items = courses.flatMap(item => (item.tasks || []).map(task => ({ course: item, task, deadline: getTaskDeadline(item, task) }))).filter(item => item.deadline).sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+      calendar.innerHTML = items.length ? items.slice(0, 12).map(item => `<div class="calendar-item"><time>${escapeHTML(formatDate(item.deadline, true))}</time><span><strong>${escapeHTML(item.task.title)}</strong><small>${escapeHTML(item.course.name)}</small></span></div>`).join('') : '<p class="empty-inline">Belum ada deadline.</p>';
+    }
   }
 
   function setupGroupLinksPage() {
