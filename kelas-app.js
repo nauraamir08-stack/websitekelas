@@ -24,8 +24,12 @@
   const normalizePersonName = value => String(value || '').toLocaleLowerCase('id-ID').replace(/[^a-z0-9]+/g, ' ').trim();
 
   function isTaskVisibleToCurrentStudent(course, task) {
+    // Normalisasi tipe agar variasi huruf besar/spasi dari database tidak dianggap tugas individu.
+    const taskType = String(task.type || '').trim().toLowerCase();
     // Tugas individu berlaku untuk semua mahasiswa yang sedang login.
-    if (task.type !== 'kelompok') return true;
+    if (taskType === 'individu') return true;
+    // Selain tugas individu, perlakukan sebagai tugas kelompok dan tampilkan hanya untuk anggota kelompoknya.
+    if (taskType !== 'kelompok') return false;
     if (!currentStudentProfile || !task.groupId) return false;
     const group = getTaskGroup(course, task);
     if (!group) return false;
@@ -293,7 +297,7 @@
     // Tugas di beranda harus mengikuti mahasiswa yang sedang login:
     // tugas individu untuk semua mahasiswa, tugas kelompok hanya untuk kelompoknya sendiri.
     const allTasks = courses.flatMap(course => getVisibleTasks(course).map(task => ({ course, task })));
-    const groupCount = allTasks.filter(({ task }) => task.type === 'kelompok').length;
+    const groupCount = allTasks.filter(({ task }) => String(task.type || '').trim().toLowerCase() === 'kelompok').length;
     document.querySelector('[data-stat="courses"]').textContent = String(courseCount);
     document.querySelector('[data-stat="tasks"]').textContent = String(allTasks.length);
     document.querySelector('[data-stat="groups"]').textContent = String(groupCount);
@@ -362,7 +366,7 @@
   }
 
   function taskCard(course, task) {
-    const isGroup = task.type === 'kelompok';
+    const isGroup = String(task.type || '').trim().toLowerCase() === 'kelompok';
     const group = isGroup ? getTaskGroup(course, task) : null;
     const deadline = getTaskDeadline(course, task);
     const action = isGroup && group
@@ -484,7 +488,7 @@
     const task = getTask(course, params.get('tugas')) || course.tasks.find(item => item.type === 'kelompok');
     const group = course.groups.find(item => item.id === task?.groupId);
     const root = document.getElementById('groupPage');
-    if (!task || task.type !== 'kelompok' || !group || !isTaskVisibleToCurrentStudent(course, task)) {
+    if (!task || String(task.type || '').trim().toLowerCase() !== 'kelompok' || !group || !isTaskVisibleToCurrentStudent(course, task)) {
       root.innerHTML = '<div class="error-card"><strong>Kelompok tidak dapat diakses.</strong><p>Anda hanya dapat membuka kelompok yang menjadi bagian Anda.</p><a class="button button-secondary" href="kelas-tugas.html">Kembali ke tugas saya</a></div>';
       return;
     }
