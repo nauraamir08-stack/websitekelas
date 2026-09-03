@@ -394,6 +394,24 @@
     `;
   }
 
+  function renderSubmissionInstruction(submission) {
+    const value = String(submission || '').trim();
+    if (!value) return '-';
+
+    const urlPattern = /https?:\/\/[^\s<]+/gi;
+    const links = value.match(urlPattern) || [];
+    const textOnly = value.replace(urlPattern, '').replace(/\s{2,}/g, ' ').trim();
+
+    if (!links.length) return escapeHTML(value);
+
+    const buttons = links.map((url, index) => {
+      const cleanUrl = url.replace(/[.,;:!?]+$/, '');
+      return `<a class="button button-primary submission-link-button" href="${escapeHTML(cleanUrl)}" target="_blank" rel="noopener">🔗 ${links.length > 1 ? `Buka Link Pengumpulan ${index + 1}` : 'Buka Link Pengumpulan'}</a>`;
+    }).join(' ');
+
+    return `${textOnly ? `${escapeHTML(textOnly)}<br>` : ''}${buttons}`;
+  }
+
   function showTaskDialog(course, task) {
     const dialog = document.getElementById('taskDialog');
     const content = document.getElementById('taskDialogContent');
@@ -402,7 +420,8 @@
       <span class="badge badge-individu">👤 Individu</span>
       <h2>${escapeHTML(task.title)}</h2>
       <p>${escapeHTML(task.description)}</p>
-      <p><strong>Deadline:</strong> ${formatDate(task.due)}<br><strong>Pengumpulan:</strong> ${escapeHTML(task.submission || '-')}</p>
+      <p><strong>Deadline:</strong> ${formatDate(task.due)}</p>
+      <div class="task-submission"><strong>Pengumpulan:</strong><br>${renderSubmissionInstruction(task.submission)}</div>
       ${task.due ? `<p><a class="button button-secondary" href="${escapeHTML(googleCalendarHref(course, task))}" target="_blank" rel="noopener">📅 Tambah ke Google Calendar</a></p>` : ''}
       <ul class="checklist">${task.checklist.map(item => `<li>${escapeHTML(item)}</li>`).join('')}</ul>
       ${task.attachmentUrl ? `<p><a class="attachment-link" href="${escapeHTML(task.attachmentUrl)}" target="_blank" rel="noopener">📎 ${escapeHTML(task.attachmentName || 'Buka lampiran')}</a></p>` : ''}
